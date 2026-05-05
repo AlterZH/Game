@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Chaos - Auto Battler</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <!-- Top Bar -->
+            <div id="top-bar">
+                <div class="stat-box">
+                    <span class="stat-label">Золото:</span>
+                    <span id="gold-display" class="stat-value gold">100</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Жизни:</span>
+                    <span id="lives-display" class="stat-value lives">❤️❤️❤️</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Победы:</span>
+                    <span id="wins-display" class="stat-value wins">0/10</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Раунд:</span>
+                    <span id="round-display" class="stat-value round">1</span>
+                </div>
+            </div>
+            
+            <!-- Phase Indicator -->
+            <div id="phase-indicator">
+                <span id="phase-text">🛒 Фаза Магазина</span>
+            </div>
+            
+            <!-- Shop Panel -->
+            <div id="shop-panel" class="panel">
+                <h3>🏪 Магазин</h3>
+                <div id="shop-items" class="item-row"></div>
+                <button id="reroll-btn" class="action-btn">🔄 Обновить (1💰)</button>
+            </div>
+            
+            <!-- Inventory Panel -->
+            <div id="inventory-panel" class="panel">
+                <h3>🎒 Инвентарь <span id="grid-size">(3x3)</span></h3>
+                <div id="inventory-grid" class="grid-container"></div>
+                <button id="expand-btn" class="action-btn">📦 Расширить (50💰)</button>
+            </div>
+            
+            <!-- Combat Panel -->
+            <div id="combat-panel" class="panel hidden">
+                <h3>⚔️ Бой</h3>
+                <div id="combat-stats">
+                    <div class="combat-stat">
+                        <span>HP Героя:</span>
+                        <div class="health-bar"><div id="hero-hp-bar" class="hp-fill"></div></div>
+                        <span id="hero-hp-text">100/100</span>
+                    </div>
+                    <div class="combat-stat">
+                        <span>HP Врага:</span>
+                        <div class="health-bar"><div id="enemy-hp-bar" class="hp-fill enemy"></div></div>
+                        <span id="enemy-hp-text">200/200</span>
+                    </div>
+                </div>
+                <div id="combat-log"></div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div id="action-buttons">
+                <button id="start-combat-btn" class="primary-btn">⚔️ Начать бой</button>
+                <button id="next-round-btn" class="primary-btn hidden">➡️ Следующий раунд</button>
+            </div>
+            
+            <!-- Item Info Tooltip -->
+            <div id="item-tooltip" class="tooltip hidden">
+                <h4 id="tooltip-name"></h4>
+                <p id="tooltip-desc"></p>
+                <p id="tooltip-stats"></p>
+                <p id="tooltip-synergy"></p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
