@@ -1,17 +1,86 @@
-// INVENTORY CHAOS - Auto Battler Game
+// INVENTORY CHAOS - Auto Battler Game with PixiJS
+// Pixel art style rendering - Using SQLite Database API
 
-const ITEM_TYPES = {
-    wooden_sword: { id: 'wooden_sword', name: 'Деревянный меч', icon: '🗡️', type: 'weapon', shape: [[1, 1]], damage: 8, cooldown: 2.0, staminaCost: 1, price: 15, description: 'Базовое оружие новичка' },
-    dagger: { id: 'dagger', name: 'Кинжал', icon: '🔪', type: 'weapon', shape: [[1]], damage: 5, cooldown: 1.2, staminaCost: 0.5, price: 10, description: 'Быстрое, но слабое оружие' },
-    shield: { id: 'shield', name: 'Щит', icon: '🛡️', type: 'armor', shape: [[1, 1]], damage: 2, cooldown: 3.0, staminaCost: 1.5, armor: 5, price: 20, description: 'Защищает от атак врага' },
-    steel_sword: { id: 'steel_sword', name: 'Стальной меч', icon: '⚔️', type: 'weapon', shape: [[1, 1, 1]], damage: 15, cooldown: 2.5, staminaCost: 2, price: 35, description: 'Мощное оружие из стали' },
-    health_potion: { id: 'health_potion', name: 'Зелье здоровья', icon: '🧪', type: 'consumable', shape: [[1]], heal: 15, cooldown: 4.0, staminaCost: 0, price: 12, description: 'Восстанавливает здоровье в бою' },
-    power_stone: { id: 'power_stone', name: 'Камень силы', icon: '💎', type: 'accessory', shape: [[1]], damage: 3, cooldown: 1.5, staminaCost: 0.3, price: 25, description: 'Усиливает соседние предметы' },
-    poison_vial: { id: 'poison_vial', name: 'Яд', icon: '☠️', type: 'consumable', shape: [[1]], damage: 4, cooldown: 1.0, staminaCost: 0.2, poisonDamage: 2, poisonDuration: 3, price: 18, description: 'Отравляет врага' },
-    helmet: { id: 'helmet', name: 'Шлем', icon: '🪖', type: 'armor', shape: [[1, 1]], damage: 1, cooldown: 2.0, staminaCost: 0.5, armor: 8, price: 22, description: 'Защищает голову' },
-    chestplate: { id: 'chestplate', name: 'Нагрудник', icon: '🦾', type: 'armor', shape: [[1, 1], [1, 1]], damage: 3, cooldown: 3.5, staminaCost: 2, armor: 12, price: 40, description: 'Тяжелая броня для тела' },
-    food: { id: 'food', name: 'Еда', icon: '🍖', type: 'consumable', shape: [[1]], heal: 8, cooldown: 3.0, staminaCost: 0, staminaRestore: 2, price: 8, description: 'Восстанавливает здоровье и выносливость' }
-};
+const CELL_SIZE = 60;
+const GRID_OFFSET_X = 100;
+const GRID_OFFSET_Y = 150;
+
+let ITEM_TYPES = {}; // Will be loaded from database
+let ITEMS_ARRAY = []; // Array version for random selection
+
+// Load items from database
+async function loadItemsFromDB() {
+    try {
+        const baseUrl = window.API_BASE_URL || '';
+        const response = await fetch(`${baseUrl}/api/items`);
+        const items = await response.json();
+        
+        // Convert database items to game format
+        ITEM_TYPES = {};
+        ITEMS_ARRAY = [];
+        
+        for (const item of items) {
+            const shape = JSON.parse(item.shape_json);
+            const gameItem = {
+                id: item.name,
+                dbId: item.id,
+                name: item.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                icon: getItemIcon(item.type, item.rarity),
+                type: item.type,
+                shape: shape,
+                damage: item.damage || 0,
+                armor: item.armor || 0,
+                heal: item.heal || 0,
+                cooldown: item.cooldown || 2.0,
+                staminaCost: item.stamina_cost || 0,
+                price: item.cost,
+                rarity: item.rarity,
+                description: item.description || '',
+                color: getItemColor(item.type, item.rarity)
+            };
+            ITEM_TYPES[gameItem.id] = gameItem;
+            ITEMS_ARRAY.push(gameItem);
+        }
+        
+        console.log('Loaded', items.length, 'items from database');
+        return true;
+    } catch (error) {
+        console.error('Failed to load items from database:', error);
+        // Fallback to default items if DB fails
+        loadDefaultItems();
+        return false;
+    }
+}
+
+function getItemIcon(type, rarity) {
+    const icons = {
+        weapon: ['🗡️', '⚔️', '🔪', '🪓', '🏹'],
+        armor: ['🛡️', '🪖', '🦾', '🥋'],
+        food: ['🍖', '🍞', '🧪', '🍎'],
+        accessory: ['💎', '💍', '📿', '🔮']
+    };
+    const typeIcons = icons[type] || icons.weapon;
+    return typeIcons[Math.floor(Math.random() * typeIcons.length)];
+}
+
+function getItemColor(type, rarity) {
+    const typeColors = {
+        weapon: { common: 0xff6b6b, rare: 0xc0392b, epic: 0x8e44ad, legendary: 0xf39c12 },
+        armor: { common: 0x4ecdc4, rare: 0x27ae60, epic: 0x2980b9, legendary: 0xf1c40f },
+        food: { common: 0x2ed573, rare: 0x1abc9c, epic: 0x16a085, legendary: 0x2ecc71 },
+        accessory: { common: 0xa29bfe, rare: 0x6c5ce7, epic: 0x8e44ad, legendary: 0xfd79a8 }
+    };
+    return (typeColors[type] && typeColors[type][rarity]) || 0xffffff;
+}
+
+function loadDefaultItems() {
+    // Fallback items if database is not available
+    ITEM_TYPES = {
+        wooden_sword: { id: 'wooden_sword', name: 'Деревянный меч', icon: '🗡️', type: 'weapon', shape: [[1, 1]], damage: 8, cooldown: 2.0, staminaCost: 1, price: 15, description: 'Базовое оружие новичка', color: 0xff6b6b },
+        dagger: { id: 'dagger', name: 'Кинжал', icon: '🔪', type: 'weapon', shape: [[1]], damage: 5, cooldown: 1.2, staminaCost: 0.5, price: 10, description: 'Быстрое, но слабое оружие', color: 0xff8787 }
+    };
+    ITEMS_ARRAY = Object.values(ITEM_TYPES);
+}
 
 function countAdjacent(grid, row, col, types) {
     const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
@@ -147,10 +216,22 @@ class CombatEngine {
 class Game {
     constructor() { this.app = null; this.grid = null; this.shopItems = []; this.gold = 100; this.lives = 3; this.wins = 0; this.round = 1; this.phase = 'shop'; this.combatEngine = null; this.draggedItem = null; this.draggedItemRotation = 0; this.init(); }
     async init() {
-        this.app = new PIXI.Application({ width: window.innerWidth, height: window.innerHeight, backgroundColor: 0x1a1a2e, resolution: window.devicePixelRatio || 1, autoDensity: true });
+        // Load items from database first
+        await loadItemsFromDB();
+        
+        this.app = new PIXI.Application({ 
+            width: window.innerWidth, 
+            height: window.innerHeight, 
+            backgroundColor: 0x1a1a2e, 
+            resolution: window.devicePixelRatio || 1, 
+            autoDensity: true,
+            antialias: false // Pixel art style - no smoothing
+        });
         document.getElementById('game-canvas').appendChild(this.app.view);
         this.grid = new GridManager(3, 3);
-        this.setupUI(); this.generateShop(); this.updateUI();
+        this.setupUI(); 
+        this.generateShop(); 
+        this.updateUI();
         this.app.ticker.add((delta) => this.gameLoop(delta));
         window.addEventListener('resize', () => this.handleResize());
     }
@@ -161,7 +242,17 @@ class Game {
         document.getElementById('next-round-btn').addEventListener('click', () => this.nextRound());
         document.addEventListener('keydown', (e) => { if (e.code === 'Space' && this.draggedItem) this.draggedItemRotation = (this.draggedItemRotation + 1) % 4; if (e.code === 'Escape' && this.draggedItem) this.cancelDrag(); });
     }
-    generateShop() { this.shopItems = []; const keys = Object.keys(ITEM_TYPES); for (let i = 0; i < 5; i++) this.shopItems.push({ ...ITEM_TYPES[keys[Math.floor(Math.random() * keys.length)]], uid: Date.now() + i }); this.renderShop(); }
+    generateShop() { 
+        this.shopItems = []; 
+        // Select random items from the loaded database items
+        for (let i = 0; i < 5; i++) {
+            if (ITEMS_ARRAY.length > 0) {
+                const randomItem = ITEMS_ARRAY[Math.floor(Math.random() * ITEMS_ARRAY.length)];
+                this.shopItems.push({ ...randomItem, uid: Date.now() + i });
+            }
+        }
+        this.renderShop(); 
+    }
     rerollShop() { if (this.gold >= 1) { this.gold--; this.generateShop(); this.updateUI(); } }
     renderShop() {
         const container = document.getElementById('shop-items'); container.innerHTML = '';
